@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DropCoins - Продвижение Музыки</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Orbitron -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        amberHud: '#ff8c00',
+                        deepDark: '#050302'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        hud: ['Orbitron', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030201;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+        .font-hud {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* HUD Grid overlay */
+        .hud-grid {
+            background-image: 
+                linear-gradient(rgba(255, 140, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 140, 0, 0.05) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        /* Strictly 85% opacity panel styling */
+        .glass-panel {
+            background: rgba(18, 12, 6, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 140, 0, 0.35);
+            box-shadow: 0 0 25px rgba(255, 140, 0, 0.12), inset 0 0 15px rgba(255, 140, 0, 0.05);
+        }
+        .glass-panel-hover:hover {
+            border-color: rgba(255, 140, 0, 0.8);
+            box-shadow: 0 0 35px rgba(255, 140, 0, 0.25);
+        }
+        .glow-text {
+            text-shadow: 0 0 12px rgba(255, 140, 0, 0.8), 0 0 24px rgba(255, 140, 0, 0.4);
+        }
+        .glow-border {
+            box-shadow: 0 0 18px rgba(255, 140, 0, 0.6);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(5, 3, 2, 0.85);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff8c00;
+            border-radius: 3px;
+        }
+
+        /* Continuous Marquee Ticker */
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee-fast {
+            display: inline-flex;
+            white-space: nowrap;
+            animation: marquee 22s linear infinite;
+        }
+        .animate-marquee-fast:hover {
+            animation-play-state: paused;
+        }
+
+        /* Horizontal Slot Reel Smooth Animation */
+        #horizontal-reel {
+            transition: transform 4.5s cubic-bezier(0.1, 0.85, 0.15, 1);
+            will-change: transform;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen text-amber-50">
+
+    <!-- Canvas for animated HUD background -->
+    <canvas id="bg-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+    <div class="fixed inset-0 hud-grid pointer-events-none z-0"></div>
+
+    <!-- MAIN WRAPPER -->
+    <div class="relative z-10 flex flex-col min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 gap-6">
+
+        <!-- HEADER -->
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl glass-panel">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/50 flex items-center justify-center glow-border animate-pulse">
+                        <i class="fa-solid fa-sliders text-amber-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-hud text-xl sm:text-2xl font-bold tracking-wider text-amber-400 glow-text">DropCoins</h1>
+                        <p class="text-xs text-amber-200/80 font-mono">AUDIO PROMO SYSTEM</p>
+                    </div>
+                </div>
+                <!-- Subscriber Counter -->
+                <div class="px-3.5 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></div>
+                    <span class="text-xs sm:text-sm font-hud text-amber-300 font-semibold" id="sub-counter">16,000 подписчиков</span>
+                </div>
+            </div>
+
+            <!-- Global Action CTA -->
+            <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                <a href="https://vk.cc/clLZH1" target="_blank" rel="noopener noreferrer" onclick="playSound('click')" 
+                   class="w-full md:w-auto text-center px-6 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-hud font-bold text-sm tracking-wide shadow-lg shadow-amber-500/30 transition-all transform hover:scale-105">
+                    <i class="fa-solid fa-bolt mr-2"></i>Заказать промо
+                </a>
+            </div>
+        </header>
+
+        <!-- MAIN GRID LAYOUT -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- LEFT & CENTER COLUMNS -->
+            <div class="lg:col-span-2 flex flex-col gap-6">
+
+                <!-- TARIFFS MODULE -->
+                <section class="p-5 sm:p-6 rounded-2xl glass-panel">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="font-hud text-lg sm:text-xl font-bold text-amber-400 flex items-center gap-3">
+                            <i class="fa-solid fa-rocket text-amber-500"></i> Пакеты Продвижения
+                        </h2>
+                        <span class="text-xs text-amber-300/80 font-mono">HUD_V3.2_ONLINE</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- BAZA -->
+                        <div onclick="openTariffModal('baza')" class="glass-panel glass-panel-hover p-5 rounded-xl cursor-pointer transition-all flex flex-col justify-between group">
+                            <div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-xs font-hud font-bold px-2.5 py-1 rounded bg-amber-500/25 text-amber-300 border border-amber-500/40">БАЗА</span>
+                                    <i class="fa-solid fa-gift text-amber-400 group-hover:scale-125 transition-transform"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-amber-200 mb-1">Бесплатный</h3>
+                                <p class="text-xs text-stone-300/90 mb-4">Начальный буст через активность в сообществе.</p>
+                            </div>
+                            <button class="w-full py-2.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-hud font-semibold hover:bg-amber-500/25 transition-colors">
+                                Условия тарифа
+                            </button>
+                        </div>
+
+                        <!-- STANDARD -->
+                        <div onclick="openTariffModal('standard')" class="glass-panel glass-panel-hover p-5 rounded-xl cursor-pointer transition-all flex flex-col justify-between group border-amber-500/60">
+                            <div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-xs font-hud font-bold px-2.5 py-1 rounded bg-amber-500/35 text-amber-200 border border-amber-500/60">СТАНДАРТ</span>
+                                    <i class="fa-solid fa-fire text-amber-400 group-hover:scale-125 transition-transform"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-amber-200 mb-1">Популярный</h3>
+                                <p class="text-xs text-stone-300/90 mb-4">30 репостов в чаты + 15 в сообщества.</p>
+                            </div>
+                            <button class="w-full py-2.5 rounded-lg bg-amber-500/25 border border-amber-500/50 text-amber-200 text-xs font-hud font-semibold hover:bg-amber-500/35 transition-colors">
+                                Состав услуги
+                            </button>
+                        </div>
+
+                        <!-- PREMIUM -->
+                        <div onclick="openTariffModal('premium')" class="glass-panel glass-panel-hover p-5 rounded-xl cursor-pointer transition-all flex flex-col justify-between group">
+                            <div>
+                                <div class="flex justify-between items-center mb-3">
+                                    <span class="text-xs font-hud font-bold px-2.5 py-1 rounded bg-amber-500/25 text-amber-300 border border-amber-500/40">ПРЕМИУМ</span>
+                                    <i class="fa-solid fa-crown text-amber-400 group-hover:scale-125 transition-transform"></i>
+                                </div>
+                                <h3 class="text-base font-bold text-amber-200 mb-1">Максимальный</h3>
+                                <p class="text-xs text-stone-300/90 mb-4">45 репостов в чаты + 20 в сообщества.</p>
+                            </div>
+                            <button class="w-full py-2.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-hud font-semibold hover:bg-amber-500/25 transition-colors">
+                                Состав услуги
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- LIVE FEED TICKER -->
+                <section class="p-4 rounded-2xl glass-panel flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-hud text-xs sm:text-sm font-bold text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-wave-square text-amber-500 animate-pulse"></i> Live-лента заказов
+                        </h3>
+                        <span class="text-[10px] font-mono text-amber-300/80 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">REALTIME</span>
+                    </div>
+                    <div id="live-ticker" class="overflow-hidden whitespace-nowrap py-1">
+                        <div class="inline-block animate-marquee text-xs font-mono text-amber-200/90" id="ticker-content">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- STYLISH ANIMATED RUNNING TICKER (БЕГУЩАЯ СТРОКА MARKETING COPY) -->
+                <section class="p-3.5 rounded-2xl glass-panel border-amber-500/50 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-amber-500/10 overflow-hidden">
+                    <div class="flex items-center gap-2 mb-1.5 text-[11px] font-hud text-amber-400 font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-bullhorn text-amber-400 animate-bounce"></i> Сервисы & Возможности DropCoins
+                    </div>
+                    <div class="overflow-hidden w-full relative">
+                        <div class="animate-marquee-fast text-xs font-hud font-semibold text-amber-200 gap-8 items-center">
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-compact-disc text-amber-400"></i>🚀 Твой трек в чартах! Продвижение релизов любой сложности</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-globe text-amber-400"></i>🔥 Музыкальная дистрибуция на все мировые площадки</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-hashtag text-amber-400"></i>🎧 Ведение соцсетей артиста & Создание вирусного контента</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-users text-amber-400"></i>⚡ Посевы в миллионных сообществах VK & Telegram</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-chart-line text-amber-400"></i>💎 Прокачай свою аудиторию и набери целевые прослушивания</span>
+                            <!-- Duplicate set for infinite smooth scroll -->
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-compact-disc text-amber-400"></i>🚀 Твой трек в чартах! Продвижение релизов любой сложности</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-globe text-amber-400"></i>🔥 Музыкальная дистрибуция на все мировые площадки</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-hashtag text-amber-400"></i>🎧 Ведение соцсетей артиста & Создание вирусного контента</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-users text-amber-400"></i>⚡ Посевы в миллионных сообществах VK & Telegram</span>
+                            <span class="flex items-center gap-2"><i class="fa-solid fa-chart-line text-amber-400"></i>💎 Прокачай свою аудиторию и набери целевые прослушивания</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- NEW ULTRA-COMPACT HORIZONTAL CYBER SLOT ROULETTE (4x SMALLER) -->
+                <section class="p-4 sm:p-5 rounded-2xl glass-panel flex flex-col gap-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-hud text-xs sm:text-sm font-bold text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-microchip text-amber-500 animate-pulse"></i> Слот-Рулетка «Выиграть промо»
+                        </h3>
+                        <span class="text-[10px] font-mono text-amber-300/80 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">CYBER_SLOT_V2</span>
+                    </div>
+
+                    <!-- Horizontal Slot Machine Reel Container -->
+                    <div class="relative w-full h-14 bg-stone-950/90 rounded-xl border-2 border-amber-500/60 overflow-hidden shadow-[inset_0_0_15px_rgba(255,140,0,0.4)] flex items-center">
+                        
+                        <!-- Center Target Line / Indicator -->
+                        <div class="absolute inset-y-0 left-1/2 -translate-x-1/2 w-28 bg-amber-500/20 border-x-2 border-amber-400 z-20 pointer-events-none flex justify-between items-center px-1">
+                            <div class="w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-l-6 border-l-amber-400"></div>
+                            <div class="w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-r-6 border-r-amber-400"></div>
+                        </div>
+
+                        <!-- Gradient Edge Shadows for Depth -->
+                        <div class="absolute inset-y-0 left-0 w-12 bg-gradient-to-r from-stone-950 to-transparent z-10 pointer-events-none"></div>
+                        <div class="absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-stone-950 to-transparent z-10 pointer-events-none"></div>
+
+                        <!-- Horizontal Sliding Tape Reel -->
+                        <div id="horizontal-reel" class="flex items-center gap-2 px-4 whitespace-nowrap absolute left-0">
+                            <!-- Generated dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+                        <p class="text-xs text-stone-300 text-center sm:text-left" id="roulette-status">Испытай удачу и получи бонусный промо-пакет.</p>
+                        <button onclick="spinHorizontalSlot()" id="spin-btn" 
+                                class="w-full sm:w-auto px-6 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-stone-950 font-hud font-bold text-xs tracking-wider shadow-md shadow-amber-500/20 transition-all transform hover:scale-105">
+                            <i class="fa-solid fa-play mr-1.5"></i>КРУТИТЬ РУЛЕТКУ
+                        </button>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- RIGHT COLUMN (Community Chat Module) -->
+            <div class="lg:col-span-1 flex flex-col gap-6">
+                <section class="p-5 rounded-2xl glass-panel flex flex-col h-[580px]">
+                    <div class="flex items-center justify-between pb-3 border-b border-amber-500/30 mb-3">
+                        <h3 class="font-hud text-sm font-bold text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-comments text-amber-500"></i> Чат Артистов
+                        </h3>
+                        <span class="text-[10px] font-mono text-amber-300/80 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30">ONLINE: <span id="online-count">52</span></span>
+                    </div>
+
+                    <!-- Chat Messages Container -->
+                    <div id="chat-messages" class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2.5 text-xs mb-3">
+                        <!-- Injected via JS -->
+                    </div>
+
+                    <!-- Chat Input Form -->
+                    <form onsubmit="sendChatMessage(event)" class="flex flex-col gap-2 pt-2 border-t border-amber-500/30">
+                        <input type="text" id="chat-username" placeholder="Ваш никнейм / Артист" required
+                            class="px-3 py-2 rounded-lg bg-stone-950/80 border border-amber-500/40 text-amber-200 placeholder-stone-400 text-xs focus:outline-none focus:border-amber-400">
+                        <div class="flex gap-2">
+                            <input type="text" id="chat-input" placeholder="Введите сообщение..." required
+                                class="flex-1 px-3 py-2 rounded-lg bg-stone-950/80 border border-amber-500/40 text-amber-200 placeholder-stone-400 text-xs focus:outline-none focus:border-amber-400">
+                            <button type="submit" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold transition-colors">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="text-center py-4 text-xs text-stone-400 border-t border-amber-500/20 mt-auto">
+            &copy; 2026 DropCoins. Все права защищены. Продвижение музыкальных релизов & дистрибуция.
+        </footer>
+
+    </div>
+
+    <!-- MODAL DIALOG (Tariff & Conditions) -->
+    <div id="tariff-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/85 backdrop-blur-md hidden">
+        <div class="glass-panel p-6 rounded-2xl max-w-md w-full relative border border-amber-500/50 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <button onclick="closeTariffModal()" class="absolute top-4 right-4 text-amber-400 hover:text-amber-200 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modal-content" class="flex flex-col gap-4">
+                <!-- Content injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* ================= WEB AUDIO API SOUND ENGINE ================= */
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+                
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'spin') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(240 + Math.random() * 120, now);
+                    gain.gain.setValueAtTime(0.04, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                    osc.start(now);
+                    osc.stop(now + 0.04);
+                } else if (type === 'message') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+                    gain.gain.setValueAtTime(0.06, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    osc.start(now);
+                    osc.stop(now + 0.1);
+                }
+            } catch (e) {
+                console.log('Audio context error:', e);
+            }
+        }
+
+        /* ================= BACKGROUND HUD CANVAS ANIMATION ================= */
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let particles = [];
+        for (let i = 0; i < 70; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2 + 0.5,
+                speedY: (Math.random() - 0.5) * 0.5,
+                speedX: (Math.random() - 0.5) * 0.5,
+                alpha: Math.random() * 0.7 + 0.2
+            });
+        }
+
+        function animateBg() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = 'rgba(255, 140, 0, 0.75)';
+            particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+                if (p.y < 0) p.y = canvas.height;
+                if (p.y > canvas.height) p.y = 0;
+
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.globalAlpha = 0.2;
+            ctx.strokeStyle = '#ff8c00';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            let waveHeight = 50;
+            let time = Date.now() * 0.002;
+            for (let x = 0; x < canvas.width; x += 25) {
+                let y = canvas.height * 0.75 + Math.sin(x * 0.01 + time) * Math.cos(x * 0.004 - time) * waveHeight;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        /* ================= SUBSCRIBER COUNTER ================= */
+        let subCount = 16000;
+        const subCounterEl = document.getElementById('sub-counter');
+        
+        setInterval(() => {
+            subCount += 1;
+            subCounterEl.innerText = subCount.toLocaleString('ru-RU') + ' подписчиков';
+        }, 3600000 / 100);
+
+        /* ================= MODULE 1: TARIFFS & MODALS ================= */
+        const TARGET_URL = "https://vk.cc/clLZH1";
+
+        const tariffsData = {
+            baza: {
+                title: "ТАРИФ БАЗА (Бесплатный)",
+                desc: "«Оставь лайк и комментарий на трёх последних записях на главной стене — выполни задание — пришли ссылку и слово 'БАЗА' в сообщения группы. Промо вашей публикации начнётся только после выполнения задания.»",
+                btnText: "Перейти к выполнению"
+            },
+            standard: {
+                title: "ТАРИФ СТАНДАРТ",
+                desc: "Состав услуги:\n• 30 репостов в музыкальные чаты.\n• 15 репостов в тематические сообщества.\n\nПрофессиональный охват для вашего нового релиза.",
+                btnText: "Заказать промо"
+            },
+            premium: {
+                title: "ТАРИФ ПРЕМИУМ",
+                desc: "Состав услуги:\n• 45 репостов в музыкальные чаты.\n• 20 репостов в тематические сообщества.\n\nМаксимальная виральность и охват аудитории.",
+                btnText: "Заказать промо"
+            }
+        };
+
+        function openTariffModal(type) {
+            playSound('click');
+            const data = tariffsData[type];
+            const modalContainer = document.getElementById('modal-content');
+            
+            let html = `
+                <h3 class="font-hud text-lg font-bold text-amber-400">${data.title}</h3>
+                <p class="text-sm text-stone-200 whitespace-pre-line leading-relaxed">${data.desc}</p>
+                <a href="${TARGET_URL}" target="_blank" rel="noopener noreferrer" onclick="playSound('click')" 
+                   class="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-stone-950 font-hud font-bold text-center shadow-lg hover:from-amber-500 hover:to-amber-400 transition-all">
+                    <i class="fa-solid fa-bolt mr-2"></i>${data.btnText}
+                </a>
+            `;
+
+            modalContainer.innerHTML = html;
+            document.getElementById('tariff-modal').classList.remove('hidden');
+        }
+
+        function closeTariffModal() {
+            playSound('click');
+            document.getElementById('tariff-modal').classList.add('hidden');
+        }
+
+        /* ================= MODULE 2: SOCIAL PROOF ================= */
+        const artistNames = [
+            "Артём Воронов (Москва)", "Данияр Сабиров (Алматы)", "София Киселёва (Минск)",
+            "Максим Зайцев (Санкт-Петербург)", "Карина Ахметова (Астана)", "Илья Морозов (Нижний Новгород)",
+            "Виктория Павлова (Екатеринбург)", "Тимур Новиков (Казань)", "Алина Смирнова (Новосибирск)",
+            "Руслан Белый (Краснодар)", "Диана Ким (Ташкент)", "Евгений Волков (Самара)",
+            "Ольга Соколова (Челябинск)", "Артур Мелконян (Ереван)", "Кристина Петрова (Уфа)",
+            "Денис Васильев (Омск)", "Анастасия Морозова (Красноярск)", "Никита Фролов (Воронеж)",
+            "Зарина Омарова (Бишкек)", "Павел Романов (Пермь)", "Александр Громов (Волгоград)",
+            "Екатерина Белова (Минск)", "Михаил Захаров (Саратов)", "Амина Шарипова (Алматы)",
+            "Сергей Попов (Тюмень)", "Елена Кузнецова (Тольятти)", "Роман Ефимов (Ижевск)"
+        ];
+
+        const tariffsList = ["База", "Стандарт", "Премиум"];
+
+        function getRandomOrder() {
+            const name = artistNames[Math.floor(Math.random() * artistNames.length)];
+            const tariff = tariffsList[Math.floor(Math.random() * tariffsList.length)];
+            return { name, tariff };
+        }
+
+        const tickerContent = document.getElementById('ticker-content');
+        function updateTicker() {
+            let itemsHTML = "";
+            for (let i = 0; i < 15; i++) {
+                const order = getRandomOrder();
+                itemsHTML += `<span class="mx-4 text-amber-200/90"><i class="fa-solid fa-circle-check text-amber-500 mr-1.5"></i>${order.name} оформил тариф <strong class="text-amber-400">${order.tariff}</strong></span> • `;
+            }
+            tickerContent.innerHTML = itemsHTML;
+        }
+        updateTicker();
+        setInterval(updateTicker, 4000);
+
+        function showToast() {
+            const order = getRandomOrder();
+            const container = document.getElementById('toast-container');
+            
+            const toast = document.createElement('div');
+            toast.className = "glass-panel p-3 rounded-xl border border-amber-500/60 text-xs text-amber-200 flex items-center gap-3 shadow-2xl pointer-events-auto transform translate-y-4 opacity-0 transition-all duration-300";
+            toast.innerHTML = `
+                <div class="w-8 h-8 rounded-lg bg-amber-500/25 border border-amber-500/50 flex items-center justify-center text-amber-400">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <div>
+                    <p class="font-bold text-amber-300">${order.name}</p>
+                    <p class="text-[11px] text-stone-200">Только что оформил тариф <span class="text-amber-400">${order.tariff}</span></p>
+                </div>
+            `;
+            
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+        setInterval(showToast, 11000);
+
+        /* ================= MODULE 4: ULTRA-COMPACT HORIZONTAL SLOT ROULETTE ================= */
+        const slotItems = [
+            { text: "Скидка 50%", win: false },
+            { text: "Тариф Стандарт", win: false },
+            { text: "Секретный приз", win: false },
+            { text: "Повезет в следующий раз", win: false, lossTarget: true },
+            { text: "Скидка 30%", win: false },
+            { text: "Почти получилось!", win: false, lossTarget: true }
+        ];
+
+        const reelContainer = document.getElementById('horizontal-reel');
+
+        function generateReelItems() {
+            let html = '';
+            // Generate sequence repeating items to make smooth continuous tape
+            for (let r = 0; r < 12; r++) {
+                slotItems.forEach((item, idx) => {
+                    const isLoss = item.lossTarget;
+                    html += `
+                        <div class="reel-card flex-none w-28 h-9 rounded-lg border ${isLoss ? 'bg-amber-500/20 border-amber-500/60 text-amber-200' : 'bg-stone-900/90 border-stone-800 text-stone-400'} flex items-center justify-center font-hud text-[10px] font-bold shadow-sm">
+                            ${item.text}
+                        </div>
+                    `;
+                });
+            }
+            reelContainer.innerHTML = html;
+        }
+        generateReelItems();
+
+        let isSpinningSlot = false;
+        function spinHorizontalSlot() {
+            if (isSpinningSlot) return;
+            isSpinningSlot = true;
+            playSound('click');
+
+            const spinBtn = document.getElementById('spin-btn');
+            const statusEl = document.getElementById('roulette-status');
+
+            spinBtn.disabled = true;
+            spinBtn.classList.add('opacity-50');
+            statusEl.innerText = "Вращение ленты...";
+
+            // Sound clicks during spin
+            let tickCount = 0;
+            const soundInterval = setInterval(() => {
+                playSound('spin');
+                tickCount++;
+            }, 120);
+
+            // Card width (28 * 4 = 112px) + gap (8px) = 120px offset per item
+            // Target specific "Повезет в следующий раз" slot in repetition loop
+            const cardOffset = 120; 
+            const targetIndex = 58; // Hardcoded exact index corresponding to loss slot
+            const translateX = -(targetIndex * cardOffset - 120); 
+
+            reelContainer.style.transform = `translateX(${translateX}px)`;
+
+            setTimeout(() => {
+                clearInterval(soundInterval);
+                isSpinningSlot = false;
+                spinBtn.disabled = false;
+                spinBtn.classList.remove('opacity-50');
+                statusEl.innerText = "Почти получилось! Выполните задание «База» или выберите платный тариф.";
+                
+                setTimeout(() => {
+                    openTariffModal('baza');
+                }, 700);
+            }, 4500);
+        }
+
+        /* ================= MODULE 5: COMMUNITY CHAT ================= */
+        const starterMessages = [
+            { user: "SoundVibe", text: "Привет всем музыкантам! Кто на каком дистрибьюторе выпускается?" },
+            { user: "BeatMaker Pro", text: "Бро, бери Стандарт тариф, реально репосты дают живой охват." },
+            { user: "Luna Music", text: "Всем творческих успехов! Как трек залить на площадки без проблем?" },
+            { user: "NordSound", text: "Кто сдает биты в аренду? Отпишите в лс." }
+        ];
+
+        let chatMessages = JSON.parse(localStorage.getItem('dropcoins_chat')) || starterMessages;
+
+        function renderChat() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = chatMessages.map(msg => `
+                <div class="p-2.5 rounded-xl bg-stone-950/70 border border-amber-500/25">
+                    <span class="font-hud font-bold text-amber-400">${msg.user}</span>
+                    <p class="text-stone-200 mt-1 leading-relaxed">${msg.text}</p>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+        renderChat();
+
+        function sendChatMessage(e) {
+            e.preventDefault();
+            playSound('message');
+
+            const usernameInput = document.getElementById('chat-username');
+            const messageInput = document.getElementById('chat-input');
+
+            const user = usernameInput.value.trim();
+            const text = messageInput.value.trim();
+
+            if (!user || !text) return;
+
+            chatMessages.push({ user, text });
+            if (chatMessages.length > 30) chatMessages.shift();
+
+            localStorage.setItem('dropcoins_chat', JSON.stringify(chatMessages));
+            messageInput.value = '';
+            renderChat();
+
+            const lowerText = text.toLowerCase();
+            if (lowerText.includes('как заказать') || lowerText.includes('цена') || lowerText.includes('база') || lowerText.includes('промо')) {
+                setTimeout(() => {
+                    chatMessages.push({
+                        user: "Bot Moderator",
+                        text: `Привет, ${user}! Для заказа выберите нужный тариф в каталоге или нажмите кнопку «Заказать промо».`
+                    });
+                    if (chatMessages.length > 30) chatMessages.shift();
+                    localStorage.setItem('dropcoins_chat', JSON.stringify(chatMessages));
+                    renderChat();
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>
